@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "p1-learning-mvp",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "./dist", "binding": "ASSETS", "not_found_handling": "single-page-application" },
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "d1_databases": [{ "binding": "DB", "database_name": "p1-learning", "database_id": "19021b86-7e9a-487a-b299-f4424883dda9", "migrations_dir": "migrations" }]
+  // R2 မလိုသေးပါ။ နောက်ပိုင်း အသံ/ပုံများထည့်ချိန်တွင် အောက်ပါ binding ကို ဖွင့်ပါ။
+  // "r2_buckets": [{ "binding": "LESSON_MEDIA", "bucket_name": "p1-lesson-media" }]
+}
