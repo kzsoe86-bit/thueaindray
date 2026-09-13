@@ -1,5 +1,9 @@
 # ရွှေစာအုပ် — P1 Learning MVP
 
+## GitHub Pages
+
+Repository ၏ `main` branch သို့ ပြင်ဆင်ချက်တင်တိုင်း GitHub Actions က website ကို အလိုအလျောက် build နှင့် publish လုပ်ပေးပါသည်။ Repository Settings → Pages → Source တွင် **GitHub Actions** ကို ရွေးပါ။ ထုတ်လွှင့်ပြီးသောလိပ်စာမှာ `https://kzsoe86-bit.github.io/thueaindray/` ဖြစ်ပါသည်။ GitHub Free account အသုံးပြုနေပါက Pages အတွက် repository ကို Public ထားရန် လိုနိုင်ပါသည်။
+
 **Live websites:**
 
 - Worker + D1: https://p1-learning-mvp.myanmar-games.workers.dev
