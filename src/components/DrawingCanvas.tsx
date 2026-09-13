@@ -69,7 +69,7 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
   };
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId); drawing.current = true; setRedo([]);
+    drawing.current = true; setRedo([]);
     setStrokes(prev => [...prev, { points: [point(e)], eraser: tool === 'eraser' }]);
   };
   const move = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -77,18 +77,13 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
     e.preventDefault();
     const p = point(e); setStrokes(prev => prev.map((s, i) => i === prev.length - 1 ? { ...s, points: [...s.points, p] } : s));
   };
-  const stop = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    drawing.current = false;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-  };
+  const stop = () => { drawing.current = false; };
 
   return <div className="draw-area">
     <div className="canvas-wrap" ref={wrapRef}>
       <span className="canvas-guide" aria-hidden="true">{guideLetter}</span>
       <div className="writing-lines" aria-hidden="true" />
-      <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onLostPointerCapture={() => { drawing.current = false; }} aria-label={`${guideLetter} အက္ခရာရေးရန် နေရာ`} />
+      <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop} aria-label={`${guideLetter} အက္ခရာရေးရန် နေရာ`} />
       {!strokes.length && <span className="canvas-hint">ဤနေရာတွင် ရေးပါ</span>}
     </div>
     <div className="canvas-tools">
