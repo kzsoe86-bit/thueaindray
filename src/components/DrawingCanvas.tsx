@@ -14,10 +14,18 @@ function renderStrokes(canvas: HTMLCanvasElement, items: Stroke[]) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   items.forEach(stroke => {
-    if (stroke.points.length < 2) return;
     ctx.globalCompositeOperation = stroke.eraser ? 'destination-out' : 'source-over';
     ctx.strokeStyle = '#123c8c';
+    ctx.fillStyle = '#123c8c';
     ctx.lineWidth = stroke.eraser ? 28 : 7;
+    if (stroke.points.length === 1) {
+      const point = stroke.points[0];
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, ctx.lineWidth / 2, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    if (stroke.points.length === 0) return;
     ctx.beginPath();
     ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
     stroke.points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
@@ -69,13 +77,18 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
     e.preventDefault();
     const p = point(e); setStrokes(prev => prev.map((s, i) => i === prev.length - 1 ? { ...s, points: [...s.points, p] } : s));
   };
-  const stop = () => { drawing.current = false; };
+  const stop = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    drawing.current = false;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
 
   return <div className="draw-area">
     <div className="canvas-wrap" ref={wrapRef}>
       <span className="canvas-guide" aria-hidden="true">{guideLetter}</span>
       <div className="writing-lines" aria-hidden="true" />
-      <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} aria-label={`${guideLetter} အက္ခရာရေးရန် နေရာ`} />
+      <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onLostPointerCapture={() => { drawing.current = false; }} aria-label={`${guideLetter} အက္ခရာရေးရန် နေရာ`} />
       {!strokes.length && <span className="canvas-hint">ဤနေရာတွင် ရေးပါ</span>}
     </div>
     <div className="canvas-tools">
