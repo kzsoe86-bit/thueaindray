@@ -55,8 +55,9 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
       canvas.style.width = `${rect.width}px`; canvas.style.height = `${rect.height}px`;
       renderStrokes(canvas, strokesRef.current);
     };
-    resize(); const observer = new ResizeObserver(resize); if (wrapRef.current) observer.observe(wrapRef.current);
-    return () => observer.disconnect();
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
   }, []);
 
   useEffect(() => {
