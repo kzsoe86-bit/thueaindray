@@ -8,27 +8,29 @@ type Stroke = { points: Point[]; eraser: boolean };
 function renderStrokes(canvas: HTMLCanvasElement, items: Stroke[]) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  const dpr = window.devicePixelRatio || 1;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = rect.width ? canvas.width / rect.width : 1;
+  const scaleY = rect.height ? canvas.height / rect.height : 1;
+  const widthScale = Math.max(scaleX, scaleY);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   items.forEach(stroke => {
     ctx.globalCompositeOperation = stroke.eraser ? 'destination-out' : 'source-over';
     ctx.strokeStyle = '#123c8c';
     ctx.fillStyle = '#123c8c';
-    ctx.lineWidth = stroke.eraser ? 28 : 7;
+    ctx.lineWidth = (stroke.eraser ? 28 : 7) * widthScale;
     if (stroke.points.length === 1) {
       const point = stroke.points[0];
       ctx.beginPath();
-      ctx.arc(point.x, point.y, ctx.lineWidth / 2, 0, Math.PI * 2);
+      ctx.arc(point.x * scaleX, point.y * scaleY, ctx.lineWidth / 2, 0, Math.PI * 2);
       ctx.fill();
       return;
     }
     if (stroke.points.length === 0) return;
     ctx.beginPath();
-    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-    stroke.points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.moveTo(stroke.points[0].x * scaleX, stroke.points[0].y * scaleY);
+    stroke.points.slice(1).forEach(p => ctx.lineTo(p.x * scaleX, p.y * scaleY));
     ctx.stroke();
   });
   ctx.globalCompositeOperation = 'source-over';
@@ -36,7 +38,6 @@ function renderStrokes(canvas: HTMLCanvasElement, items: Stroke[]) {
 
 export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; onDone: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
   const drawing = useRef(false);
   const strokesRef = useRef<Stroke[]>([]);
   const [tool, setTool] = useState<'pen' | 'eraser'>('pen');
@@ -44,25 +45,8 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
   const [redo, setRedo] = useState<Stroke[]>([]);
 
   useEffect(() => {
-    const resize = () => {
-      const canvas = canvasRef.current; const wrap = wrapRef.current;
-      if (!canvas || !wrap) return;
-      const rect = wrap.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1;
-      const width = Math.round(rect.width * dpr);
-      const height = Math.round(rect.height * dpr);
-      if (canvas.width === width && canvas.height === height) return;
-      canvas.width = width; canvas.height = height;
-      canvas.style.width = `${rect.width}px`; canvas.style.height = `${rect.height}px`;
-      renderStrokes(canvas, strokesRef.current);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
-  }, []);
-
-  useEffect(() => {
     strokesRef.current = strokes;
-    if (canvasRef.current) renderStrokes(canvasRef.current, strokes);
+    if (canvasRef.current && strokes.length) renderStrokes(canvasRef.current, strokes);
   }, [strokes]);
   const point = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -81,10 +65,10 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
   const stop = () => { drawing.current = false; };
 
   return <div className="draw-area">
-    <div className="canvas-wrap" ref={wrapRef}>
+    <div className="canvas-wrap">
       <span className="canvas-guide" aria-hidden="true">{guideLetter}</span>
       <div className="writing-lines" aria-hidden="true" />
-      <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop} aria-label={`${guideLetter} အက္ခရာရေးရန် နေရာ`} />
+      <canvas ref={canvasRef} width={1000} height={500} onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop} aria-label={`${guideLetter} အက္ခရာရေးရန် နေရာ`} />
       {!strokes.length && <span className="canvas-hint">ဤနေရာတွင် ရေးပါ</span>}
     </div>
     <div className="canvas-tools">
