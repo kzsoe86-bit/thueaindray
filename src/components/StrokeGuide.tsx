@@ -23,6 +23,6 @@ export function StrokeGuide({ letter, label }: { letter: string; label: string }
     <defs><marker id={markerId} markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z"/></marker></defs>
     <line className="guide-line guide-line--top" x1="4" y1="10" x2="90" y2="10"/><line className="guide-line guide-line--middle" x1="4" y1="50" x2="90" y2="50"/><line className="guide-line guide-line--bottom" x1="4" y1="90" x2="90" y2="90"/>
     <text className="guide-letter" x="47" y="85" textAnchor="middle">{letter}</text>
-    {arrows.map(([x1,y1,x2,y2], index)=><g key={index}><text className="stroke-number" x={x1-4} y={y1-2}>{index+1}</text><line className="stroke-arrow" x1={x1} y1={y1} x2={x2} y2={y2} markerEnd={`url(#${markerId})`}/></g>)}
-  </svg></div>;
+    {arrows.map(([x1,y1,x2,y2], index)=><g key={index} className={`stroke-step stroke-step--${index % 4 + 1}`}><circle className="stroke-start" cx={x1} cy={y1} r="4"/><text className="stroke-number" x={x1} y={y1+2} textAnchor="middle">{index+1}</text><line className="stroke-arrow" x1={x1} y1={y1} x2={x2} y2={y2} markerEnd={`url(#${markerId})`}/></g>)}
+  </svg><div className="step-order" aria-label="Stroke steps">{arrows.map((_, index)=><span key={index} className={`step-chip step-chip--${index % 4 + 1}`}><b>{index+1}</b> Step {index+1}{index < arrows.length-1 && <i>→</i>}</span>)}</div></div>;
 }
