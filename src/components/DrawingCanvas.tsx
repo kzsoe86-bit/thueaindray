@@ -46,7 +46,7 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
 
   useEffect(() => {
     strokesRef.current = strokes;
-    if (canvasRef.current && strokes.length) renderStrokes(canvasRef.current, strokes);
+    if (canvasRef.current) renderStrokes(canvasRef.current, strokes);
   }, [strokes]);
   const point = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -54,8 +54,9 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
   };
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    const firstPoint = point(e);
     drawing.current = true; setRedo([]);
-    setStrokes(prev => [...prev, { points: [point(e)], eraser: tool === 'eraser' }]);
+    setStrokes(prev => [...prev, { points: [firstPoint], eraser: tool === 'eraser' }]);
   };
   const move = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!drawing.current) return;
