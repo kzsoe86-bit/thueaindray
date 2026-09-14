@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Eraser, Pencil, Redo2, Trash2, Undo2 } from 'lucide-react';
 import { Button } from './Button';
+import type { Language } from '../types';
 
 type Point = { x: number; y: number; pressure: number };
 type Stroke = { points: Point[]; eraser: boolean };
@@ -36,13 +37,15 @@ function renderStrokes(canvas: HTMLCanvasElement, items: Stroke[]) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
-export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; onDone: () => void }) {
+export function DrawingCanvas({ guideLetter, onDone, language }: { guideLetter: string; onDone: () => void; language: Language }) {
+  const en = language === 'en';
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const strokesRef = useRef<Stroke[]>([]);
   const [tool, setTool] = useState<'pen' | 'eraser'>('pen');
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [redo, setRedo] = useState<Stroke[]>([]);
+  const [feedback, setFeedback] = useState<'idle' | 'invalid'>('idle');
 
   useEffect(() => {
     strokesRef.current = strokes;
@@ -55,6 +58,7 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const firstPoint = point(e);
+    setFeedback('idle');
     drawing.current = true; setRedo([]);
     setStrokes(prev => [...prev, { points: [firstPoint], eraser: tool === 'eraser' }]);
   };
@@ -64,21 +68,52 @@ export function DrawingCanvas({ guideLetter, onDone }: { guideLetter: string; on
     const p = point(e); setStrokes(prev => prev.map((s, i) => i === prev.length - 1 ? { ...s, points: [...s.points, p] } : s));
   };
   const stop = () => { drawing.current = false; };
+  const validateAndFinish = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const check = document.createElement('canvas');
+    check.width = Math.max(1, Math.round(rect.width));
+    check.height = Math.max(1, Math.round(rect.height));
+    const ctx = check.getContext('2d');
+    if (!ctx) return;
+    const fontSize = Math.min(check.height * .73, check.width * .42);
+    ctx.font = `800 ${fontSize}px Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = Math.max(26, fontSize * .13);
+    ctx.strokeText(guideLetter, check.width / 2, check.height / 2 + fontSize * .05);
+    const pixels = ctx.getImageData(0, 0, check.width, check.height).data;
+    const points = strokes.filter(s => !s.eraser).flatMap(s => s.points);
+    const matches = points.filter(p => {
+      const x = Math.max(0, Math.min(check.width - 1, Math.round(p.x)));
+      const y = Math.max(0, Math.min(check.height - 1, Math.round(p.y)));
+      return pixels[(y * check.width + x) * 4 + 3] > 0;
+    }).length;
+    const xs = points.map(p => p.x), ys = points.map(p => p.y);
+    const width = points.length ? Math.max(...xs) - Math.min(...xs) : 0;
+    const height = points.length ? Math.max(...ys) - Math.min(...ys) : 0;
+    const enoughWriting = points.length >= 6 && width > rect.width * .12 && height > rect.height * .2;
+    if (enoughWriting && matches / points.length >= .52) onDone();
+    else setFeedback('invalid');
+  };
 
   return <div className="draw-area">
     <div className="canvas-wrap">
       <span className="canvas-guide" aria-hidden="true">{guideLetter}</span>
       <div className="writing-lines" aria-hidden="true" />
-      <canvas ref={canvasRef} width={1000} height={500} onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop} aria-label={`${guideLetter} အက္ခရာရေးရန် နေရာ`} />
-      {!strokes.length && <span className="canvas-hint">ဤနေရာတွင် ရေးပါ</span>}
+      <canvas ref={canvasRef} width={1000} height={500} onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop} aria-label={en ? `Area for writing the letter ${guideLetter}` : `${guideLetter} အက္ခရာရေးရန် နေရာ`} />
+      {!strokes.length && <span className="canvas-hint">{en ? 'Write here' : 'ဤနေရာတွင် ရေးပါ'}</span>}
     </div>
     <div className="canvas-tools">
-      <button className={tool === 'pen' ? 'active' : ''} onClick={() => setTool('pen')}><Pencil size={19} /> ခဲတံ</button>
-      <button className={tool === 'eraser' ? 'active' : ''} onClick={() => setTool('eraser')}><Eraser size={19} /> ဖျက်ခဲ</button>
-      <button disabled={!strokes.length} onClick={() => setStrokes(prev => { const last = prev.at(-1); if (last) setRedo(r => [...r, last]); return prev.slice(0, -1); })}><Undo2 size={19} /> နောက်ပြန်</button>
-      <button disabled={!redo.length} onClick={() => setRedo(prev => { const last = prev.at(-1); if (last) setStrokes(s => [...s, last]); return prev.slice(0, -1); })}><Redo2 size={19} /> ရှေ့ပြန်</button>
-      <button disabled={!strokes.length} onClick={() => { setStrokes([]); setRedo([]); }}><Trash2 size={19} /> အားလုံးဖျက်</button>
+      <button className={tool === 'pen' ? 'active' : ''} onClick={() => setTool('pen')}><Pencil size={19} /> {en ? 'Pencil' : 'ခဲတံ'}</button>
+      <button className={tool === 'eraser' ? 'active' : ''} onClick={() => setTool('eraser')}><Eraser size={19} /> {en ? 'Eraser' : 'ဖျက်ခဲ'}</button>
+      <button disabled={!strokes.length} onClick={() => setStrokes(prev => { const last = prev.at(-1); if (last) setRedo(r => [...r, last]); return prev.slice(0, -1); })}><Undo2 size={19} /> {en ? 'Undo' : 'နောက်ပြန်'}</button>
+      <button disabled={!redo.length} onClick={() => setRedo(prev => { const last = prev.at(-1); if (last) setStrokes(s => [...s, last]); return prev.slice(0, -1); })}><Redo2 size={19} /> {en ? 'Redo' : 'ရှေ့ပြန်'}</button>
+      <button disabled={!strokes.length} onClick={() => { setStrokes([]); setRedo([]); setFeedback('idle'); }}><Trash2 size={19} /> {en ? 'Clear all' : 'အားလုံးဖျက်'}</button>
     </div>
-    <Button onClick={onDone} disabled={!strokes.some(s => !s.eraser)} className="done-button">ရေးပြီးပြီ <span>✓</span></Button>
+    {feedback === 'invalid' && <p className="writing-feedback" role="alert">{en ? `Stay close to the ${guideLetter} guide and try again.` : `${guideLetter} စာလုံးဘောင်အတိုင်း နီးနီးကပ်ကပ် ပြန်ရေးကြည့်ပါ။`}</p>}
+    <Button onClick={validateAndFinish} disabled={!strokes.some(s => !s.eraser)} className="done-button">{en ? 'Check my writing' : 'ရေးသားမှု စစ်မယ်'} <span>✓</span></Button>
   </div>;
 }
